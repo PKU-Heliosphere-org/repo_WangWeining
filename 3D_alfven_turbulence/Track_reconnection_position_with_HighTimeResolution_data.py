@@ -11,7 +11,7 @@ from scipy.interpolate import griddata
 matplotlib.rcParams['font.size'] = 16
 from scipy.ndimage import uniform_filter
 from scipy.ndimage import gaussian_filter
-
+from scipy.interpolate import RegularGridInterpolator
 ######### loadinfo function
 
 
@@ -123,8 +123,8 @@ dt = 11/32/np.sqrt(3)#2.56
 
 
 #mark
-t_idx_start = 300
-t_idx_end = 400
+t_idx_start =200
+t_idx_end = 222
 t_idx_step = 2
 
 calculate_w_k = 1
@@ -655,18 +655,29 @@ def calc_vector_field_jacobian_eigen_vectorized(vector_field, hx, hy, hz, use_sy
 #     return eigenvals, eigenvecs
 if __name__ == '__main__':
     epoch = 15
+    x = np.linspace(-32, 32, 256)
+    y = np.linspace(-32, 32, 256)
+    z = np.linspace(-32, 32, 256)
     for epoch in range(1):
         t_idx = 0
         Bx, By, Bz = Q_3d['bx'][:,:,:,t_idx],Q_3d['by'][:,:,:,t_idx],Q_3d['bz'][:,:,:,t_idx]
        
         uix, uiy, uiz = Q_3d['uix'][:,:,:,t_idx],Q_3d['uiy'][:,:,:,t_idx],Q_3d['uiz'][:,:,:,t_idx]
+        ni = Q_3d['ni'][:,:,:,t_idx]
+
+
+        Jx, Jy, Jz = calculate_curl(Bx, By, Bz, x, y, z)
+        uex, uey, uez = uix-Jx/ni, uiy-Jy/ni, uiz-Jz/ni
+        #t_arr = np.linspace(t_idx_start, t_idx_end, (t_idx_end-t_idx_start)//t_idx_step)
+        interp_uex_single = RegularGridInterpolator((x, y, z), uex)
+        interp_uey_single = RegularGridInterpolator((x, y, z), uey)
+        interp_uez_single = RegularGridInterpolator((x, y, z), uez)
+    
         B_vec = np.stack([Bx,By,Bz],axis=-1)
         u_vec = np.stack([uix,uiy,uiz],axis=-1)
         print(B_vec.shape)
-        x = np.linspace(-32, 32, 256)
-        y = np.linspace(-32, 32, 256)
-        z = np.linspace(-32, 32, 256)
-        from scipy.interpolate import RegularGridInterpolator
+  
+        
         interp_Bx = RegularGridInterpolator((x, y, z), Bx)
         interp_By = RegularGridInterpolator((x, y, z), By)
         interp_Bz = RegularGridInterpolator((x, y, z), Bz)
@@ -822,6 +833,12 @@ if __name__ == '__main__':
                 ds = ds_new
             
             return np.array(path)
+        def get_position_start(center, ds=0.002, max_steps=3000, step:int = 200):
+            line_0 = np.array(trace_fieldline_3D_single(center, 
+                                                        ds=ds, max_steps=max_steps))
+            line_0_minus = np.array(trace_fieldline_3D_single(center,ds=ds, max_steps=max_steps, direction=-1))
+            position_start=line_0_minus[::-step,:].tolist()+line_0[::step,:].tolist()
+            return position_start
         # line_test = trace_fieldline_3D_optimized([0.,0.,0.], x, y, z, interp_Bx, interp_By, interp_Bz,direction=1, max_steps=10000)
         # fig = plt.figure(figsize=(10, 7))
         # plt.streamplot(x,y,Bx[:,:,nz//2].T, By[:,:,nz//2].T, density=1.5, linewidth=1, color='black', broken_streamlines=False)
@@ -843,7 +860,95 @@ if __name__ == '__main__':
             lambda_mat_u = np.load("./data/lambda_mat_u.npy")
             eigen_vec_u = np.load("./data/eigen_vec_u.npy")
         # print("test:",trace_fieldline_3D_single(np.array([1.241,-2.014,-12.856]),ds=0.002, max_steps=5000,direction=1))
-        line_test = trace_fieldline_3D_single(np.array([3.881,-3.219,-4.787]),ds=0.002, max_steps=5000,direction=-1)
+        line_test = trace_fieldline_3D_single(np.array([-8.128,8.772,22.624]),ds=0.001, max_steps=2000,direction=1)
+        print(line_test[np.abs(line_test[:,2]-23.118).argmin(),:])
+        x_arr = np.linspace(-15,15,31)
+        y_arr = np.linspace(-15,15,31)
+        ve_grad_perp_max_mat = np.zeros((len(x_arr),len(y_arr)))
+        ve_grad_para_max_mat = np.zeros((len(x_arr),len(y_arr)))
+        ve_grad_max_mat = np.zeros((len(x_arr),len(y_arr)))
+        # for i in range(24,27):
+        #     print(i)
+        #     for j in range(7,10):
+        #         start_line_test = get_position_start(np.array([x_arr[i],y_arr[j],0]),ds=0.02, max_steps=1500,step=50)
+        #         vex_lst, vey_lst, vez_lst = [], [], []
+        #         bx_lst, by_lst, bz_lst = [], [], []
+
+                
+        #         for pos_tmp in start_line_test:
+        #             vex_tmp = interp_uex_single(np.array(pos_tmp))
+        #             vey_tmp = interp_uey_single(np.array(pos_tmp))
+        #             vez_tmp = interp_uez_single(np.array(pos_tmp))
+        #             bx_tmp, by_tmp, bz_tmp = interp_Bx(np.array(pos_tmp))[0], interp_By(np.array(pos_tmp))[0], interp_Bz(np.array(pos_tmp))[0]
+        #             b_vec_norm = np.array([bx_tmp,by_tmp,bz_tmp])/np.linalg.norm(np.array([bx_tmp,by_tmp,bz_tmp]))
+        #             vex_lst.append(vex_tmp)
+        #             vey_lst.append(vey_tmp)
+        #             vez_lst.append(vez_tmp)
+        #             bx_lst.append(b_vec_norm[0])
+        #             by_lst.append(b_vec_norm[1])
+        #             bz_lst.append(b_vec_norm[2])
+
+
+                
+        #         vex_grad = np.gradient(np.array(vex_lst).squeeze())
+        #         vey_grad = np.gradient(np.array(vey_lst).squeeze())
+        #         vez_grad = np.gradient(np.array(vez_lst).squeeze())
+        #         bx_arr, by_arr, bz_arr = np.array(bx_lst).squeeze(), np.array(by_lst).squeeze(), np.array(bz_lst).squeeze()
+
+        #         ve_grad_para = (vex_grad*bx_arr+vey_grad*by_arr+vez_grad*bz_arr).reshape(-1,1)*np.column_stack((bx_arr,by_arr,bz_arr))
+        #         # print(ve_grad_para.shape)
+
+        #         ve_grad_perp = np.column_stack((vex_grad,vey_grad,vez_grad))-ve_grad_para
+        #         ve_grad_perp_norm = np.linalg.norm(ve_grad_perp,axis=1)
+        #         ve_grad_para_norm = np.linalg.norm(ve_grad_para,axis=1)
+        #         ve_grad_perp_max_mat[i,j] = ve_grad_perp_norm[1:-1].max()
+        #         ve_grad_para_max_mat[i,j] = ve_grad_para_norm[1:-1].max()
+        #         ve_grad_max_mat[i,j] = np.sqrt(vex_grad**2+vey_grad**2+vez_grad**2)[1:-1].max()
+        #         #print(i,j,ve_grad_perp_norm.max(),ve_grad_perp_norm.argmax())
+        #         print(i,j,ve_grad_perp_norm[1:-1].max(),ve_grad_perp_norm[1:-1].argmax(),'ve_vec: ',vex_grad[ve_grad_perp_norm.argmax()],vey_grad[ve_grad_perp_norm.argmax()],vez_grad[ve_grad_perp_norm.argmax()],'B_vec: ',
+        #               bx_arr[ve_grad_perp_norm.argmax()],by_arr[ve_grad_perp_norm.argmax()],bz_arr[ve_grad_perp_norm.argmax()],
+        #               ve_grad_para_norm[ve_grad_perp_norm.argmax()])
+
+
+
+
+
+        # plt.figure(figsize=(25, 7))
+        # fig, axes=plt.subplots(1,3,figsize=(25, 7))
+
+        # # print()
+        # ax = axes[0]
+        # pclr=ax.pcolormesh(x_arr,y_arr,ve_grad_max_mat.T,cmap='jet')
+        # cbar=plt.colorbar(pclr,ax=ax)
+        # ax.set_xlabel("x[di]", fontsize=15)
+        # ax.set_ylabel("y[di]", fontsize=15)
+        # cbar.set_label(r'$(\Delta v_{e})_{max}$', fontsize=15)
+        # ax.set_title(fr"max of $(\Delta v_{{e}})_{{max}}$={ve_grad_max_mat.max():.3f}")
+
+        # ax = axes[1]
+        # pclr=ax.pcolormesh(x_arr,y_arr,ve_grad_perp_max_mat.T,cmap='jet')
+        # cbar=plt.colorbar(pclr,ax=ax)
+        # ax.set_xlabel("x[di]", fontsize=15)
+        # ax.set_ylabel("y[di]", fontsize=15)
+        # cbar.set_label(r'$(\Delta v_{e,\perp})_{max}$', fontsize=15)
+        # ax.set_title(fr"max of $(\Delta v_{{e,\perp}})_{{max}}$={ve_grad_perp_max_mat.max():.3f}")
+
+        # ax = axes[2]
+        # pclr=ax.pcolormesh(x_arr,y_arr,ve_grad_para_max_mat.T,cmap='jet')
+        # cbar=plt.colorbar(pclr,ax=ax)
+        # ax.set_xlabel("x[di]", fontsize=15)
+        # ax.set_ylabel("y[di]", fontsize=15)
+        # cbar.set_label(r'$(\Delta v_{e,\parallel})_{max}$', fontsize=15)
+        # ax.set_title(fr"max of $(\Delta v_{{e,\parallel}})_{{max}}$={ve_grad_para_max_mat.max():.3f}")
+        # plt.suptitle(fr"t={t_idx_start*0.2:.2f}$\omega_{{ci}}^{{-1}}$", fontsize=18)
+        # plt.savefig(f"./figures/ve_grad_{t_idx_start}.png")
+        # plt.close(fig)
+
+
+
+
+
+
         condition = np.where(np.abs(line_test[:,2]+12.035)<0.005)
         condition_2 = np.where(np.abs(line_test[:,2]+8)<0.005)
         print(line_test[condition,:])
@@ -979,23 +1084,30 @@ if __name__ == '__main__':
     # line_0_minus = np.array(trace_fieldline_3D_single(center,ds=ds, max_steps=max_steps, direction=-1))
     # # print(len(line_0))
     # position_start=line_0_minus[::-200,:].tolist()+line_0[::200,:].tolist()
-    def get_position_start(center, ds=0.002, max_steps=3000, step:int = 200):
-        line_0 = np.array(trace_fieldline_3D_single(center, 
-                                                       ds=ds, max_steps=max_steps))
-        line_0_minus = np.array(trace_fieldline_3D_single(center,ds=ds, max_steps=max_steps, direction=-1))
-        position_start=line_0_minus[::-step,:].tolist()+line_0[::step,:].tolist()
-        return position_start
+    
     # position_start = get_position_start(np.array([2.5,-3,center[2]]))
     position_start_2 = get_position_start(center-2*a0-2.5*b0)
     position_start_single = []
     x_point = np.linspace(1.5,3,16)
     y_point = np.linspace(-3,-2.5,3)
-    start = False
+    start = True
     if start:
-        position_start = get_position_start(np.array([2.5,-3,center[2]]), step=25)
+        # position_start = get_position_start(np.array([-10.9,10,0]), step=1,ds=0.02, max_steps=1500)
+        position_start = trace_fieldline_3D_single(np.array([ -6.35096253,  11.62916545, -25.97957101]), ds=0.02, max_steps=3000,direction=1).tolist()
+        vex_lst, vey_lst = [], []
+                
+        for pos_tmp in position_start:
+            vex_tmp = interp_uex_single(np.array(pos_tmp))
+            vey_tmp = interp_uey_single(np.array(pos_tmp))
+            vex_lst.append(vex_tmp)
+            vey_lst.append(vey_tmp)
+        
+        vex_grad = np.gradient(np.array(vex_lst).squeeze())
+        vey_grad = np.gradient(np.array(vey_lst).squeeze())
+        print("old line:",np.sqrt(vex_grad**2+vey_grad**2).max())
         np.save("./data/position_start.npy",np.array(position_start))
     else:
-        position_start = np.load("./data/position_end_arr_2.npy").tolist()
+        position_start = np.load("./data/position_end_arr_1.npy").tolist()
 
 
     position_start_single.append(np.array(position_start[0]).squeeze())
@@ -1057,257 +1169,292 @@ if __name__ == '__main__':
     interp_uex = RegularGridInterpolator((x, y, z, t_arr), uex)
     interp_uey = RegularGridInterpolator((x, y, z, t_arr), uey)
     interp_uez = RegularGridInterpolator((x, y, z, t_arr), uez)
+    x_arr = np.linspace(-11.5,-10.5,11)
+    y_arr = np.linspace(9.5,10.5,11)
+    
+
     if not use_new_tracing_code:
-        for pos_start_tmp in position_start:
-            position_e_lst = []
-            print(i_pos)
-            i_pos+=1
-            for idx in range(t_idx_start, t_idx_end, t_idx_step):
-                t_idx = (idx-t_idx_start)//t_idx_step
-                
-                # print(uex.max(),uey.max(),uez.max(),np.sqrt(uex**2+uey**2+uez**2).max())
+        max_dis_mat = np.zeros((len(x_arr), len(y_arr)), dtype=float)
 
-                
-                # from matplotlib.patches import Rectangle
-                # import matplotlib.gridspec as gridspec
-                # from matplotlib.image import imread
-               
-                
-                #print(uix[x_point_lst[i_plot][0],x_point_lst[i_plot][1],x_point_lst[i_plot][2]],uiy[x_point_lst[i_plot][0],x_point_lst[i_plot][1],x_point_lst[i_plot][2]],uiz[x_point_lst[i_plot][0],x_point_lst[i_plot][1], x_point_lst[i_plot][2]])
+        for i in range(6,7):
+            for j in range(5,6):
+                pos_start_lst_tmp = get_position_start(np.array([x_arr[i],y_arr[j],0]),ds=0.02, max_steps=1300,step=25)
+                position_end = []
+                position_e_mat = np.zeros((len(position_start),len(t_arr),3))
 
-                # print(center)
-                # print(np.dot([Bx[i_lst[0][i],j_lst[0][i],k_lst[0][i]],By[i_lst[0][i],j_lst[0][i],k_lst[0][i]],Bz_total[i_lst[0][i],j_lst[0][i],k_lst[0][i]]],a))
-                # a0 = a / np.linalg.norm(a)
-                # b_perp = b - np.dot(b, a0)*a0  # 施密特正交化
-                # b0 = b_perp / np.linalg.norm(b_perp)
-                # n = np.cross(a, b)
-                # # from scipy.interpolate import RegularGridInterpolator
-
-                # X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
-                # # 3. 构建目标平面（xy平面）的二维网格
-                # u = np.linspace(-6, 6, 101)  # a0方向坐标
-
-                # v = np.linspace(-5, 5, 100)  # b0方向坐标
-                # u_near = np.linspace(-1.5, 1.5, 20)  # a0方向坐标
-                # v_near = np.linspace(-1.5, 1.5, 20)  # b0方向坐标
-                # U, V = np.meshgrid(u, v)
-                # U_near, v_near = np.meshgrid(u_near, v_near)
-                # # 将二维网格点映射到三维空间（xy平面，z=0）
-                # R = (center + U[..., None]*a0 + V[..., None]*b0+32)%64-32  # R.shape = (100,100,3)
-                # R_near = (center + U_near[..., None]*a0 + v_near[..., None]*b0+32)%64-32  # R.shape = (100,100,3)
-                # interp_Bx = RegularGridInterpolator((x, y, z), Bx)
-                # interp_By = RegularGridInterpolator((x, y, z), By)
-                # interp_Bz = RegularGridInterpolator((x, y, z), Bz_total)
-                # interp_uix = RegularGridInterpolator((x, y, z), uix)
-                # interp_uiy = RegularGridInterpolator((x, y, z), uiy)
-                # interp_uiz = RegularGridInterpolator((x, y, z), uiz)
-        #         # print(center,R)
-        #         # 4. 插值获取平面上的三维磁场并投影
-        #         # 构建三维插值器
-                
-        #         # print(len(position_start))
-        #         # print(position_start)
-        #         # print("test:",interp_uex(np.array([0,0,0])))
-                
+                for pos_start_tmp in position_start:
+                    position_e_lst = []
+                    # print(i_pos)
                     
-                if idx==t_idx_start:
-                    position_e_lst.append(np.array(pos_start_tmp))
+                    for idx in range(t_idx_start, t_idx_end, t_idx_step):
+                        t_idx = (idx-t_idx_start)//t_idx_step
+                        #print(t_idx)
+                        
+                        # print(uex.max(),uey.max(),uez.max(),np.sqrt(uex**2+uey**2+uez**2).max())
 
-                    
-                
-                    # target_point_lst.append(center)
-                else:
+                        
+                        # from matplotlib.patches import Rectangle
+                        # import matplotlib.gridspec as gridspec
+                        # from matplotlib.image import imread
                     
                         
-                    uex_tmp = float(interp_uex([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2], idx]))
-                    uey_tmp = float(interp_uey([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2], idx]))
-                    uez_tmp = float(interp_uez([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2], idx]))
-                    # print(uex_tmp, uey_tmp)
-                    # print(interp_uix([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2]]),interp_uiy([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2]]))
-                    x_e = float(position_e_lst[-1][0]+uex_tmp*dt*t_idx_step)
-                    y_e = float(position_e_lst[-1][1]+uey_tmp*dt*t_idx_step)
-                    z_e = float(position_e_lst[-1][2]+uez_tmp*dt*t_idx_step)
-                    position_e_lst.append(np.array([x_e, y_e, z_e]))
-                    print(f"epoch={idx}, position:({x_e:.3f},{y_e:.3f},{z_e:.3f}), velocity:({uex_tmp:.3f},{uey_tmp:.3f},{uez_tmp:.3f})")
-                    if idx==t_idx_end-t_idx_step:
-                        position_end.append((x_e,y_e,z_e))  
-                
-                # Bx_plot_flat = interp_Bx(points)  # 结果 shape: (10000,)
-                # By_plot_flat = interp_By(points)  # 结果 shape: (10000,)
+                        #print(uix[x_point_lst[i_plot][0],x_point_lst[i_plot][1],x_point_lst[i_plot][2]],uiy[x_point_lst[i_plot][0],x_point_lst[i_plot][1],x_point_lst[i_plot][2]],uiz[x_point_lst[i_plot][0],x_point_lst[i_plot][1], x_point_lst[i_plot][2]])
 
-                # # 4. 重塑为网格形状（与X、Y对应，方便后续绘图）
-                # Bx_plot = Bx_plot_flat.reshape(X_grid.shape)  # (100, 100)
-                # By_plot = By_plot_flat.reshape(X_grid.shape)
-                # uex_plot_flat = interp_uex(points)  # 结果 shape: (10000,)
-                # uey_plot_flat = interp_uey(points)  # 结果 shape: (10000,)
+                        # print(center)
+                        # print(np.dot([Bx[i_lst[0][i],j_lst[0][i],k_lst[0][i]],By[i_lst[0][i],j_lst[0][i],k_lst[0][i]],Bz_total[i_lst[0][i],j_lst[0][i],k_lst[0][i]]],a))
+                        # a0 = a / np.linalg.norm(a)
+                        # b_perp = b - np.dot(b, a0)*a0  # 施密特正交化
+                        # b0 = b_perp / np.linalg.norm(b_perp)
+                        # n = np.cross(a, b)
+                        # # from scipy.interpolate import RegularGridInterpolator
 
-                # # 4. 重塑为网格形状（与X、Y对应，方便后续绘图）
-                # uex_plot = uex_plot_flat.reshape(X_grid.shape)  # (100, 100)
-                # uey_plot = uey_plot_flat.reshape(X_grid.shape)
-                # """
-                # PLOT XY PLANE FIELD LINE AND VELOCITY
-                # """
-                # fig, axes = plt.subplots(1,2,figsize=(20, 10))
-                # ax = axes[0]
-                # idx_x, idx_y, idx_z = x_point_lst[i_plot][0], x_point_lst[i_plot][1], x_point_lst[i_plot][2]
-                
-                # # Bx_plot = interp_Bx(np.array([x_grid,y_grid,z_plot]))
-                # # print(X_grid.shape, Bx_plot.shape)
-                # ax.streamplot(X_grid,Y_grid,Bx_plot, By_plot, color='black', density=1, broken_streamlines=False)
-                # pclr=ax.pcolormesh(X_grid, Y_grid, uex_plot, cmap='jet')
-                # cbar= plt.colorbar(pclr,ax=ax)
-                # ax.scatter(position_e_lst[-1][0],position_e_lst[-1][1], c='blue', s=70)
-                # ax.set_xlabel("x[di]", fontsize=20)
-                # ax.set_ylabel("y[di]", fontsize=20)
+                        # X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
+                        # # 3. 构建目标平面（xy平面）的二维网格
+                        # u = np.linspace(-6, 6, 101)  # a0方向坐标
 
-                # # ax.streamplot(x[x_plot_range],y[y_plot_range],Bx[x_plot_range,y_plot_range,x_point_lst[i_plot][2]].T, By[:,:,x_point_lst[i_plot][2]].T, color='black', density=1.8)
-                # # ax.set_xlim([center[0]-5,center[0]+5])
-                # # ax.set_ylim([center[1]-5,center[1]+5])
-                # ax = axes[1]
-                # ax.streamplot(X_grid,Y_grid,uex_plot, uey_plot, color='black', density=2.5)
-                # pclr=ax.pcolormesh(X_grid, Y_grid, uey_plot, cmap='jet')
-                # cbar= plt.colorbar(pclr,ax=ax)
-                # ax.scatter(position_e_lst[-1][0],position_e_lst[-1][1], c='blue', s=70)
-                # ax.set_xlabel("x[di]", fontsize=20)
-                # ax.set_ylabel("y[di]", fontsize=20)
-                # plt.suptitle(f"time: {idx}, z0: {position_start_single[0][2]:.2f},(x,y,z): ({position_e_lst[-1][0]:.3f},{position_e_lst[-1][1]:.3f},{position_e_lst[-1][2]:.3f})", fontsize=20)
-                # # ax.set_xlim([center[0]-5,center[0]+5])
-                # # ax.set_ylim([center[1]-5,center[1]+5])
-                # if not os.path.exists(f"./img/img_x_{position_start_single[0][0]:.2f}_y_{position_start_single[0][1]:.2f}_z_{position_start_single[0][2]:.2f}/"):
-                #     os.mkdir(f"./img/img_x_{position_start_single[0][0]:.2f}_y_{position_start_single[0][1]:.2f}_z_{position_start_single[0][2]:.2f}/")
-                # plt.savefig(f"./img/img_x_{position_start_single[0][0]:.2f}_y_{position_start_single[0][1]:.2f}_z_{position_start_single[0][2]:.2f}/fig_"+str(idx)+'.png')
-                # plt.close()
-                # # interp_Ti = RegularGridInterpolator((x, y, z), Ti)
-                # # interp_J_dot_e_prime = RegularGridInterpolator((x, y, z), J_dot_e_prime)
-                # # interp_J_dot_e_prime_parallel = RegularGridInterpolator((x, y, z), J_dot_e_prime_parallel)
-                # # interp_J_dot_e = RegularGridInterpolator((x, y, z), J_dot_e)
-                # # 插值得到平面上的B向量
-                # Bx_proj = interp_Bx(R)
-                # By_proj = interp_By(R)
-                # Bz_proj = interp_Bz(R)
-                # uix_proj = interp_uix(R)
-                # uiy_proj = interp_uiy(R)
-                # uiz_proj = interp_uiz(R)
-                # # Ti_proj = interp_Ti(R)
-                # # J_dot_e_prime_proj = interp_J_dot_e_prime(R)
-                # # J_dot_e_prime_parallel_proj = interp_J_dot_e_prime_parallel(R)
-                # # J_dot_e_proj = interp_J_dot_e(R)
-                # uix_proj_near = interp_uix(R_near)
-                # uiy_proj_near = interp_uiy(R_near)
-                # uiz_proj_near = interp_uiz(R_near)
-                
-                    
-                
-                # B = np.stack([Bx_proj, By_proj, Bz_proj], axis=-1)
-                # ui = np.stack([uix_proj, uiy_proj, uiz_proj], axis=-1)
-                # ui_near = np.stack([uix_proj_near, uiy_proj_near, uiz_proj_near], axis=-1)
-                # # 剔除法向分量（n=(0,0,1)，此处即剔除Bz）
-                # B_plane = B - np.dot(B, n)[..., None]*n / np.linalg.norm(n)**2
-                # ui_plane = ui - np.dot(ui, n)[..., None]*n / np.linalg.norm(n)**2
-                # ui_plane_near = ui_near - np.dot(ui_near, n)[..., None]*n / np.linalg.norm(n)**2
-                # # 转化为局部二维分量（B_u = B·a0，B_v = B·b0）
-                # B_u = np.dot(B_plane, a0)
-                # B_v = np.dot(B_plane, b0)
-                # u_u = np.dot(ui_plane, a0)
-                # u_v = np.dot(ui_plane, b0)
-                # u_u_near = np.dot(ui_plane_near, a0)
-                # u_v_near = np.dot(ui_plane_near, b0)
-                # u_u_prime = u_u-u_u_near.mean()
-                # u_v_prime = u_v-u_v_near.mean()
+                        # v = np.linspace(-5, 5, 100)  # b0方向坐标
+                        # u_near = np.linspace(-1.5, 1.5, 20)  # a0方向坐标
+                        # v_near = np.linspace(-1.5, 1.5, 20)  # b0方向坐标
+                        # U, V = np.meshgrid(u, v)
+                        # U_near, v_near = np.meshgrid(u_near, v_near)
+                        # # 将二维网格点映射到三维空间（xy平面，z=0）
+                        # R = (center + U[..., None]*a0 + V[..., None]*b0+32)%64-32  # R.shape = (100,100,3)
+                        # R_near = (center + U_near[..., None]*a0 + v_near[..., None]*b0+32)%64-32  # R.shape = (100,100,3)
+                        # interp_Bx = RegularGridInterpolator((x, y, z), Bx)
+                        # interp_By = RegularGridInterpolator((x, y, z), By)
+                        # interp_Bz = RegularGridInterpolator((x, y, z), Bz_total)
+                        # interp_uix = RegularGridInterpolator((x, y, z), uix)
+                        # interp_uiy = RegularGridInterpolator((x, y, z), uiy)
+                        # interp_uiz = RegularGridInterpolator((x, y, z), uiz)
+                #         # print(center,R)
+                #         # 4. 插值获取平面上的三维磁场并投影
+                #         # 构建三维插值器
+                        
+                #         # print(len(position_start))
+                #         # print(position_start)
+                #         # print("test:",interp_uex(np.array([0,0,0])))
+                        
+                            
+                        if idx==t_idx_start:
+                            position_e_lst.append(np.array(pos_start_tmp))
 
-                # rect = Rectangle(
-                #     (-2, -1.5),  # 左下角坐标
-                #     width=3,  # 沿x轴长度
-                #     height=3,  # 沿y轴长度
-                #     edgecolor='red',  # 边框颜色
-                #     facecolor='none',  # 填充颜色（none为空心）
-                #     linewidth=2,  # 边框线宽
-                #     linestyle='-'  # 边框样式（虚线）
-                # )
-                # # 5. 绘制磁力线投影
-                # fig = plt.figure(figsize=(18, 16))
-                # gs = gridspec.GridSpec(1, 2, figure=fig, height_ratios=[1], hspace=0.45)
-                # # ax = fig.add_subplot(gs[0, :])
-                # # ax.imshow(imread("screenshot_90.png"),aspect='auto')
-                # # ax.set_xticks([])
-                # # ax.set_yticks([])
-                # ax = fig.add_subplot(gs[0])
-                # if idx==t_idx_start:
-                #     # vector = np.array(position_start)-center[np.newaxis,...]
-                #     # vector_2 = vector-(vector@n)@n/np.linalg.norm(n)**2
-                #     for pos_tmp in position_start:
-                #         vector = (np.array(pos_tmp)-center)-np.dot(np.array(pos_tmp)-center,n)*n/np.linalg.norm(n)**2
-                #         _a,_b = decompose_vector(vector,a0,b0)
-                #         print(_a,_b)
-                #         ax.scatter(_a,_b,c='b')
-                # elif idx==t_idx_end-1:
-                #     for pos_tmp in position_end:
-                #         vector = (np.array(pos_tmp)-center)-np.dot(np.array(pos_tmp)-center,n)*n/np.linalg.norm(n)**2
-                #         _a,_b = decompose_vector(vector,a0,b0)
-                #         ax.scatter(_a,_b,c='g')
+                            
+                        
+                            # target_point_lst.append(center)
+                        else:
+                            
+                            # print(position_e_lst[-1])
+                            uex_tmp = float(interp_uex([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2], idx]))
+                            uey_tmp = float(interp_uey([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2], idx]))
+                            uez_tmp = float(interp_uez([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2], idx]))
+                            # print(uex_tmp, uey_tmp)
+                            # print(interp_uix([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2]]),interp_uiy([position_e_lst[-1][0],position_e_lst[-1][1],position_e_lst[-1][2]]))
+                            x_e = float(position_e_lst[-1][0]+uex_tmp*dt*t_idx_step)
+                            y_e = float(position_e_lst[-1][1]+uey_tmp*dt*t_idx_step)
+                            z_e = float(position_e_lst[-1][2]+uez_tmp*dt*t_idx_step)
+                            position_e_lst.append(np.array([x_e, y_e, z_e]))
+                            # if i_pos == 106 or i_pos==107 or i_pos==108:
+                            #     print(f"epoch={idx}, position:({x_e:.3f},{y_e:.3f},{z_e:.3f}), velocity:({uex_tmp:.3f},{uey_tmp:.3f},{uez_tmp:.3f})")
+                            if idx==t_idx_end-t_idx_step:
+                                position_end.append((x_e,y_e,z_e))  
+                        position_e_mat[i_pos,t_idx,:]=np.array(position_e_lst[-1])
+                    i_pos+=1
+                        # Bx_plot_flat = interp_Bx(points)  # 结果 shape: (10000,)
+                        # By_plot_flat = interp_By(points)  # 结果 shape: (10000,)
+
+                        # # 4. 重塑为网格形状（与X、Y对应，方便后续绘图）
+                        # Bx_plot = Bx_plot_flat.reshape(X_grid.shape)  # (100, 100)
+                        # By_plot = By_plot_flat.reshape(X_grid.shape)
+                        # uex_plot_flat = interp_uex(points)  # 结果 shape: (10000,)
+                        # uey_plot_flat = interp_uey(points)  # 结果 shape: (10000,)
+
+                        # # 4. 重塑为网格形状（与X、Y对应，方便后续绘图）
+                        # uex_plot = uex_plot_flat.reshape(X_grid.shape)  # (100, 100)
+                        # uey_plot = uey_plot_flat.reshape(X_grid.shape)
+                        # """
+                        # PLOT XY PLANE FIELD LINE AND VELOCITY
+                        # """
+                        # fig, axes = plt.subplots(1,2,figsize=(20, 10))
+                        # ax = axes[0]
+                        # idx_x, idx_y, idx_z = x_point_lst[i_plot][0], x_point_lst[i_plot][1], x_point_lst[i_plot][2]
+                        
+                        # # Bx_plot = interp_Bx(np.array([x_grid,y_grid,z_plot]))
+                        # # print(X_grid.shape, Bx_plot.shape)
+                        # ax.streamplot(X_grid,Y_grid,Bx_plot, By_plot, color='black', density=1, broken_streamlines=False)
+                        # pclr=ax.pcolormesh(X_grid, Y_grid, uex_plot, cmap='jet')
+                        # cbar= plt.colorbar(pclr,ax=ax)
+                        # ax.scatter(position_e_lst[-1][0],position_e_lst[-1][1], c='blue', s=70)
+                        # ax.set_xlabel("x[di]", fontsize=20)
+                        # ax.set_ylabel("y[di]", fontsize=20)
+
+                        # # ax.streamplot(x[x_plot_range],y[y_plot_range],Bx[x_plot_range,y_plot_range,x_point_lst[i_plot][2]].T, By[:,:,x_point_lst[i_plot][2]].T, color='black', density=1.8)
+                        # # ax.set_xlim([center[0]-5,center[0]+5])
+                        # # ax.set_ylim([center[1]-5,center[1]+5])
+                        # ax = axes[1]
+                        # ax.streamplot(X_grid,Y_grid,uex_plot, uey_plot, color='black', density=2.5)
+                        # pclr=ax.pcolormesh(X_grid, Y_grid, uey_plot, cmap='jet')
+                        # cbar= plt.colorbar(pclr,ax=ax)
+                        # ax.scatter(position_e_lst[-1][0],position_e_lst[-1][1], c='blue', s=70)
+                        # ax.set_xlabel("x[di]", fontsize=20)
+                        # ax.set_ylabel("y[di]", fontsize=20)
+                        # plt.suptitle(f"time: {idx}, z0: {position_start_single[0][2]:.2f},(x,y,z): ({position_e_lst[-1][0]:.3f},{position_e_lst[-1][1]:.3f},{position_e_lst[-1][2]:.3f})", fontsize=20)
+                        # # ax.set_xlim([center[0]-5,center[0]+5])
+                        # # ax.set_ylim([center[1]-5,center[1]+5])
+                        # if not os.path.exists(f"./img/img_x_{position_start_single[0][0]:.2f}_y_{position_start_single[0][1]:.2f}_z_{position_start_single[0][2]:.2f}/"):
+                        #     os.mkdir(f"./img/img_x_{position_start_single[0][0]:.2f}_y_{position_start_single[0][1]:.2f}_z_{position_start_single[0][2]:.2f}/")
+                        # plt.savefig(f"./img/img_x_{position_start_single[0][0]:.2f}_y_{position_start_single[0][1]:.2f}_z_{position_start_single[0][2]:.2f}/fig_"+str(idx)+'.png')
+                        # plt.close()
+                        # # interp_Ti = RegularGridInterpolator((x, y, z), Ti)
+                        # # interp_J_dot_e_prime = RegularGridInterpolator((x, y, z), J_dot_e_prime)
+                        # # interp_J_dot_e_prime_parallel = RegularGridInterpolator((x, y, z), J_dot_e_prime_parallel)
+                        # # interp_J_dot_e = RegularGridInterpolator((x, y, z), J_dot_e)
+                        # # 插值得到平面上的B向量
+                        # Bx_proj = interp_Bx(R)
+                        # By_proj = interp_By(R)
+                        # Bz_proj = interp_Bz(R)
+                        # uix_proj = interp_uix(R)
+                        # uiy_proj = interp_uiy(R)
+                        # uiz_proj = interp_uiz(R)
+                        # # Ti_proj = interp_Ti(R)
+                        # # J_dot_e_prime_proj = interp_J_dot_e_prime(R)
+                        # # J_dot_e_prime_parallel_proj = interp_J_dot_e_prime_parallel(R)
+                        # # J_dot_e_proj = interp_J_dot_e(R)
+                        # uix_proj_near = interp_uix(R_near)
+                        # uiy_proj_near = interp_uiy(R_near)
+                        # uiz_proj_near = interp_uiz(R_near)
+                        
+                            
+                        
+                        # B = np.stack([Bx_proj, By_proj, Bz_proj], axis=-1)
+                        # ui = np.stack([uix_proj, uiy_proj, uiz_proj], axis=-1)
+                        # ui_near = np.stack([uix_proj_near, uiy_proj_near, uiz_proj_near], axis=-1)
+                        # # 剔除法向分量（n=(0,0,1)，此处即剔除Bz）
+                        # B_plane = B - np.dot(B, n)[..., None]*n / np.linalg.norm(n)**2
+                        # ui_plane = ui - np.dot(ui, n)[..., None]*n / np.linalg.norm(n)**2
+                        # ui_plane_near = ui_near - np.dot(ui_near, n)[..., None]*n / np.linalg.norm(n)**2
+                        # # 转化为局部二维分量（B_u = B·a0，B_v = B·b0）
+                        # B_u = np.dot(B_plane, a0)
+                        # B_v = np.dot(B_plane, b0)
+                        # u_u = np.dot(ui_plane, a0)
+                        # u_v = np.dot(ui_plane, b0)
+                        # u_u_near = np.dot(ui_plane_near, a0)
+                        # u_v_near = np.dot(ui_plane_near, b0)
+                        # u_u_prime = u_u-u_u_near.mean()
+                        # u_v_prime = u_v-u_v_near.mean()
+
+                        # rect = Rectangle(
+                        #     (-2, -1.5),  # 左下角坐标
+                        #     width=3,  # 沿x轴长度
+                        #     height=3,  # 沿y轴长度
+                        #     edgecolor='red',  # 边框颜色
+                        #     facecolor='none',  # 填充颜色（none为空心）
+                        #     linewidth=2,  # 边框线宽
+                        #     linestyle='-'  # 边框样式（虚线）
+                        # )
+                        # # 5. 绘制磁力线投影
+                        # fig = plt.figure(figsize=(18, 16))
+                        # gs = gridspec.GridSpec(1, 2, figure=fig, height_ratios=[1], hspace=0.45)
+                        # # ax = fig.add_subplot(gs[0, :])
+                        # # ax.imshow(imread("screenshot_90.png"),aspect='auto')
+                        # # ax.set_xticks([])
+                        # # ax.set_yticks([])
+                        # ax = fig.add_subplot(gs[0])
+                        # if idx==t_idx_start:
+                        #     # vector = np.array(position_start)-center[np.newaxis,...]
+                        #     # vector_2 = vector-(vector@n)@n/np.linalg.norm(n)**2
+                        #     for pos_tmp in position_start:
+                        #         vector = (np.array(pos_tmp)-center)-np.dot(np.array(pos_tmp)-center,n)*n/np.linalg.norm(n)**2
+                        #         _a,_b = decompose_vector(vector,a0,b0)
+                        #         print(_a,_b)
+                        #         ax.scatter(_a,_b,c='b')
+                        # elif idx==t_idx_end-1:
+                        #     for pos_tmp in position_end:
+                        #         vector = (np.array(pos_tmp)-center)-np.dot(np.array(pos_tmp)-center,n)*n/np.linalg.norm(n)**2
+                        #         _a,_b = decompose_vector(vector,a0,b0)
+                        #         ax.scatter(_a,_b,c='g')
 
 
 
-                # #     # for _i in range(1,len(line_0)-1,20):
-                # #     #     vector = (line_0[_i, :]-center)-np.dot(line_0[_i,:]-center,n)*n/np.linalg.norm(n)**2
-                # #     #     _a,_b = decompose_vector(vector,a0,b0)
-                # #     #     ax.scatter(_a,_b,c='b')
+                        # #     # for _i in range(1,len(line_0)-1,20):
+                        # #     #     vector = (line_0[_i, :]-center)-np.dot(line_0[_i,:]-center,n)*n/np.linalg.norm(n)**2
+                        # #     #     _a,_b = decompose_vector(vector,a0,b0)
+                        # #     #     ax.scatter(_a,_b,c='b')
 
 
 
-                # ax.streamplot(U, V, B_u, B_v, density=1, color='k', linewidth=0.8, broken_streamlines=False)
-                # # ax.streamplot(x,y,Bx)
-                # # ax.scatter((np.array(target_point_lst[-1]).squeeze()-center)[0],)
-                # # print(u_u_prime.shape,u_v_prime.shape)
-                # # pclr = ax.pcolormesh(U,V,J_dot_e_prime_parallel_proj,cmap='bwr',shading='auto', vmin=-0.02, vmax=0.02)
-                # # cbar=plt.colorbar(pclr,ax=ax)
-                # # cbar.set_label(r'$(J\cdot E^\prime)_{\parallel}$', fontsize=20)
-                # ax.arrow(-1.2,0.8,10*(u_u_prime[58,38]), 10*u_v_prime[58,38], head_width=0.2,color='b')
-                # # ax.arrow(0.3,0,10*(u_u_prime[50,53]), 10*u_v_prime[50,53], head_width=0.2,color='b')
-                # ax.arrow(0.2,1,10*(u_u_prime[60,52]), 10*u_v_prime[60,52], head_width=0.2, color='r')
-                # ax.arrow(0.5,-0.8,10*(u_u_prime[42,55]), 10*u_v_prime[42,55], head_width=0.2, color='b')
-                # ax.arrow(-1,-0.8,10*(u_u_prime[42,40]), 10*u_v_prime[40,42], head_width=0.2, color='r')
-                # # ax.arrow(1.5,-0.3,10*(u_u_prime[50,65]), 10*u_v_prime[50,65], head_width=0.2, color='r')
-                # # # ax.streamplot(U, V, u_u-u_u_near.mean(), u_v-u_v_near.mean(), density=2, color='b', linewidth=0.8)
-                # # # plt.streamplot(U, V, u_u-u_u_near.mean(), u_v-u_v_near.mean(), density=2, color='b', linewidth=0.8)
-                # ax.add_patch(rect)
-                # ax.set_xlabel(f'$e_1$')
-                # ax.set_ylabel(f'$e_2$')
-                # ax.set_title(f'magnetic field line projection\n on the principal eigenvector plane', fontsize=25)
-                # ax.axis('equal')
-                # ax = fig.add_subplot(gs[1])
-                # rect = Rectangle(
-                #     (-2, -1.5),  # 左下角坐标
-                #     width=3,  # 沿x轴长度
-                #     height=3,  # 沿y轴长度
-                #     edgecolor='red',  # 边框颜色
-                #     facecolor='none',  # 填充颜色（none为空心）
-                #     linewidth=2,  # 边框线宽
-                #     linestyle='-'  # 边框样式（虚线）
-                # )
-                # # ax.streamplot(U, V, B_u, B_v, density=2, color='k', linewidth=0.8)
-                # ax.streamplot(U, V, u_u-u_u_near.mean(), u_v-u_v_near.mean(), density=3, color='k', linewidth=0.8)
-                
-                # # pclr = ax.pcolormesh(U,V,J_dot_e_prime_parallel_proj,cmap='bwr',shading='auto', vmin=-0.02, vmax=0.02)
-                # # cbar=plt.colorbar(pclr,ax=ax)
-                # # cbar.set_label(r'$(J\cdot E^\prime)_{\parallel}$', fontsize=20)
-                # ax.arrow(-1.2,0.8,10*(u_u_prime[58,38]), 10*u_v_prime[58,38], head_width=0.2,color='b')
-                # # ax.arrow(0.3,0,10*(u_u_prime[50,53]), 10*u_v_prime[50,53], head_width=0.2,color='b')
-                # ax.arrow(0.2,1,10*(u_u_prime[60,52]), 10*u_v_prime[60,52], head_width=0.2, color='r')
-                # ax.arrow(0.5,-0.8,10*(u_u_prime[42,55]), 10*u_v_prime[42,55], head_width=0.2, color='b')
-                # ax.arrow(-1,-0.8,10*(u_u_prime[42,40]), 10*u_v_prime[40,42], head_width=0.2, color='r')
-                # ax.add_patch(rect)
-                # ax.set_xlabel(f'$e_1$')
-                # ax.set_ylabel(f'$e_2$')
-                # ax.set_title(f'velocity field line projection\n on the principal eigenvector plane', fontsize=25)
-                # ax.axis('equal')
-                # plt.savefig(f'./figures/fig_{i_plot}_epoch_{idx}.png')
-                # plt.close(fig=fig)
-            # plt.figure(figsize=(10,7))
-            # plt.plot(np.array(position_e_lst)[:,0],np.array(position_e_lst)[:,1])
-            # plt.savefig("./figures/fig_e_traj.png")
-    position_end_arr = np.array(position_end)
-    np.save("./data/position_end_arr_3.npy", position_end_arr)
+                        # ax.streamplot(U, V, B_u, B_v, density=1, color='k', linewidth=0.8, broken_streamlines=False)
+                        # # ax.streamplot(x,y,Bx)
+                        # # ax.scatter((np.array(target_point_lst[-1]).squeeze()-center)[0],)
+                        # # print(u_u_prime.shape,u_v_prime.shape)
+                        # # pclr = ax.pcolormesh(U,V,J_dot_e_prime_parallel_proj,cmap='bwr',shading='auto', vmin=-0.02, vmax=0.02)
+                        # # cbar=plt.colorbar(pclr,ax=ax)
+                        # # cbar.set_label(r'$(J\cdot E^\prime)_{\parallel}$', fontsize=20)
+                        # ax.arrow(-1.2,0.8,10*(u_u_prime[58,38]), 10*u_v_prime[58,38], head_width=0.2,color='b')
+                        # # ax.arrow(0.3,0,10*(u_u_prime[50,53]), 10*u_v_prime[50,53], head_width=0.2,color='b')
+                        # ax.arrow(0.2,1,10*(u_u_prime[60,52]), 10*u_v_prime[60,52], head_width=0.2, color='r')
+                        # ax.arrow(0.5,-0.8,10*(u_u_prime[42,55]), 10*u_v_prime[42,55], head_width=0.2, color='b')
+                        # ax.arrow(-1,-0.8,10*(u_u_prime[42,40]), 10*u_v_prime[40,42], head_width=0.2, color='r')
+                        # # ax.arrow(1.5,-0.3,10*(u_u_prime[50,65]), 10*u_v_prime[50,65], head_width=0.2, color='r')
+                        # # # ax.streamplot(U, V, u_u-u_u_near.mean(), u_v-u_v_near.mean(), density=2, color='b', linewidth=0.8)
+                        # # # plt.streamplot(U, V, u_u-u_u_near.mean(), u_v-u_v_near.mean(), density=2, color='b', linewidth=0.8)
+                        # ax.add_patch(rect)
+                        # ax.set_xlabel(f'$e_1$')
+                        # ax.set_ylabel(f'$e_2$')
+                        # ax.set_title(f'magnetic field line projection\n on the principal eigenvector plane', fontsize=25)
+                        # ax.axis('equal')
+                        # ax = fig.add_subplot(gs[1])
+                        # rect = Rectangle(
+                        #     (-2, -1.5),  # 左下角坐标
+                        #     width=3,  # 沿x轴长度
+                        #     height=3,  # 沿y轴长度
+                        #     edgecolor='red',  # 边框颜色
+                        #     facecolor='none',  # 填充颜色（none为空心）
+                        #     linewidth=2,  # 边框线宽
+                        #     linestyle='-'  # 边框样式（虚线）
+                        # )
+                        # # ax.streamplot(U, V, B_u, B_v, density=2, color='k', linewidth=0.8)
+                        # ax.streamplot(U, V, u_u-u_u_near.mean(), u_v-u_v_near.mean(), density=3, color='k', linewidth=0.8)
+                        
+                        # # pclr = ax.pcolormesh(U,V,J_dot_e_prime_parallel_proj,cmap='bwr',shading='auto', vmin=-0.02, vmax=0.02)
+                        # # cbar=plt.colorbar(pclr,ax=ax)
+                        # # cbar.set_label(r'$(J\cdot E^\prime)_{\parallel}$', fontsize=20)
+                        # ax.arrow(-1.2,0.8,10*(u_u_prime[58,38]), 10*u_v_prime[58,38], head_width=0.2,color='b')
+                        # # ax.arrow(0.3,0,10*(u_u_prime[50,53]), 10*u_v_prime[50,53], head_width=0.2,color='b')
+                        # ax.arrow(0.2,1,10*(u_u_prime[60,52]), 10*u_v_prime[60,52], head_width=0.2, color='r')
+                        # ax.arrow(0.5,-0.8,10*(u_u_prime[42,55]), 10*u_v_prime[42,55], head_width=0.2, color='b')
+                        # ax.arrow(-1,-0.8,10*(u_u_prime[42,40]), 10*u_v_prime[40,42], head_width=0.2, color='r')
+                        # ax.add_patch(rect)
+                        # ax.set_xlabel(f'$e_1$')
+                        # ax.set_ylabel(f'$e_2$')
+                        # ax.set_title(f'velocity field line projection\n on the principal eigenvector plane', fontsize=25)
+                        # ax.axis('equal')
+                        # plt.savefig(f'./figures/fig_{i_plot}_epoch_{idx}.png')
+                        # plt.close(fig=fig)
+                    # plt.figure(figsize=(10,7))
+                    # plt.plot(np.array(position_e_lst)[:,0],np.array(position_e_lst)[:,1])
+                    # plt.savefig("./figures/fig_e_traj.png")
+                position_end_arr = np.array(position_end)
+                position_end_arr = (position_end_arr+32)%64-32
+                delta_dis_arr = np.sqrt((position_end_arr[1:,0]-position_end_arr[:-1,0])**2 + (position_end_arr[1:,1]-position_end_arr[:-1,1])**2 + (position_end_arr[1:,2]-position_end_arr[:-1,2])**2)
+                print(i,j,'max distance= ',delta_dis_arr.max(),', index= ',delta_dis_arr.argmax())
+                max_dis_mat[i,j] = delta_dis_arr.max()
+        # plt.figure(figsize=(10,7))
+        # pclr=plt.pcolormesh(x_arr,y_arr,max_dis_mat.T,cmap='coolwarm')
+        # cbar = plt.colorbar(pclr)
+        # plt.savefig("./figures/max_distance.png")
+        # plt.close()
+        np.save("./data/position_end_arr_1.npy", position_end_arr)
+        np.save("./data/position_e_mat.npy", position_e_mat)
+
+
+
+
+
+
+    # position_start_arr = np.array(position_start)
+
+
+    #np.save("./data/position_end_arr_1.npy", position_end_arr)
 
 
 """
