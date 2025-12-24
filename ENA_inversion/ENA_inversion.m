@@ -53,33 +53,38 @@ end
 % end
 %%
 clc
+plot(date,sw_pressure)
+%%
+clc
 phi_start=135*pi/180;phi_end=405*pi/180;
-data_plot=sw_pressure(17545:10:113954);
+data_plot=sw_pressure(17545:10:113954);%2002-2012
+data_plot = sw_pressure(43850:10:166561);%2005-2018
 len_data = length(data_plot);
 phi = linspace(phi_start,phi_end,len_data);
-phi_year=linspace(phi_start,phi_end,11);
+phi_year=linspace(phi_start,phi_end,14);
 x_data=zeros(len_data,1);y_data=zeros(len_data,1);
 data_norm=2*data_plot;
 data_min=min(data_plot);
-x_data=(3+data_norm).*cos(phi)';y_data=(3+data_norm).*sin(phi)';
+x_data=(3.5+data_norm).*cos(phi)';y_data=(3.5+data_norm).*sin(phi)';
 r=sqrt(x_data.^2+y_data.^2);
 x=-5:0.01:5;
 y=-sqrt(25-x.^2);
-set(gcf,'color','white')
-%whitebg('black')
+set(gcf,'color','black')
+whitebg('black')
 plot(x,y,'color',[1,1,1],LineWidth=4)
 hold on
-x1=-5:0.01:5*cos(phi_start);x2=5*cos(phi_end):0.01:5;
+x1=-5:1e-7:5*cos(phi_start);x2=5*cos(phi_end):1e-7:5;
 y1=sqrt(25-x1.^2);y2=sqrt(25-x2.^2);
 plot(x1,y1,'color',[1,1,1],LineWidth=4)
 hold on
 plot(x2,y2,'color',[1,1,1],LineWidth=4)
 hold on
+
 plot(x_data,y_data,'g','LineWidth',2)
 a=annotation('textarrow',[0.66,0.64],[0.65,0.675]);
 a.Color=[1,1,1];
 r_txt=[4.5 4.5 4.5 4.5 4.5 4 3.8 3.5 3.2 3.5 3.8];
-for i=1:11
+for i=1:14
     plot([4.5*cos(phi_year(i)-0.01*sign(i-6)),5*cos(phi_year(i)-0.01*sign(i-6))],[4.5*sin(phi_year(i)-0.01*sign(i-6)),5*sin(phi_year(i)-0.01*sign(i-6))],'color',[1,1,1],'LineWidth',2.5)
     %text(r_txt(i)*cos(phi_year(i)+0.01),r_txt(i)*sin(phi_year(i)+0.01),num2str(2001+i))
     hold on
@@ -88,7 +93,7 @@ xlim([-10,10])
 ylim([-10,10])
 xticks([])
 yticks([])
-
+scatter(5.05,0,'white','filled',SizeData=5)
 %%
 clc
 clear
