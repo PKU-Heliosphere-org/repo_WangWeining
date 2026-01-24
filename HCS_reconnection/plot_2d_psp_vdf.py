@@ -141,6 +141,7 @@ epochpmom, densp, vp_r, vp_t, vp_n, Tp, EFLUX_VS_PHI_p, PHI_p, T_tensor_p, MagF_
                                                                                                        is_inst=False)
 Babs_epochp = interp_epoch(Babs, epochmag, epochpmom)
 Br_epochp = interp_epoch(Br, epochmag, epochpmom)
+Bn_epochp = interp_epoch(Bn, epochmag, epochpmom)
 plasma_beta = calc_plasma_beta(densp, Tp, Babs_epochp)
 # %%
 
@@ -199,13 +200,15 @@ print(len(pmom_time))
 
 def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
     ftsize = 15
+    axis_label_fs = 20
+    axis_label_pad = 10
     # 将下面的原始图代码改为subfigure版本
     fig = plt.figure(dpi=100, figsize=(20, 25), constrained_layout=False)
     # fig,axs = plt.subplots(figsize=(12,10))
 
-    gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1], hspace=0.0)
+    gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1], hspace=-0.15)
     spec = gridspec.GridSpecFromSubplotSpec(6, 1, subplot_spec=gs[0], hspace=0.01)
-    spec2 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=gs[1], wspace=0.6, width_ratios=[1, 1, 1, 1, 0.05],
+    spec2 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=gs[1], wspace=0.0, width_ratios=[1, 1, 1, 1, 0.05],
                                              hspace=0.0)
     # spec3 = gridspec.GridSpecFromSubplotSpec(2, 4, subplot_spec=gs[2], wspace=0.4, width_ratios=[1, 1, 1, 1],
     #                                          hspace=0.2)
@@ -219,9 +222,9 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
     axs[i].plot(epochpmom, r_psp_carr_pmom, 'k-', linewidth=1)
     ax2 = axs[i].twinx()
     ax2.plot(epochpmom, np.rad2deg(lon_psp_carr_pmom), 'r-', linewidth=1)
-    ax2.set_ylabel('Carrington\n Longitude (deg)', fontsize=ftsize)
+    ax2.set_ylabel('Carrington\n Longitude (deg)', fontsize=axis_label_fs, labelpad=axis_label_pad)
     ax2.tick_params(labelsize=20)
-    axs[i].set_ylabel('Radial\n Distance (Rs)', fontsize=ftsize)
+    axs[i].set_ylabel('Radial\n Distance (Rs)', fontsize=axis_label_fs, labelpad=axis_label_pad)
     axs[i].set_xlim([epochpmom[0], epochpmom[-1]])
     plt.text(x_label, 0.7, '(a)', transform=plt.gca().transAxes,
              fontdict=dict(fontsize=20, color='k', weight='semibold'))
@@ -231,7 +234,7 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
     axs.append(fig.add_subplot(spec[i, :]))
     pos = axs[i].pcolormesh(epochpade, PitchAngle[0][:], np.log10(np.array(norm_EfluxVsPAE[:, :, pad_energy_ind])).T,
                             cmap='jet', vmax=pad_norm_clim_max, vmin=pad_norm_clim_min)
-    axs[i].set_ylabel('Pitch\n Angle (deg)', fontsize=ftsize)
+    axs[i].set_ylabel('Pitch\n Angle (deg)', fontsize=axis_label_fs, labelpad=axis_label_pad)
     axs[i].xaxis.set_minor_locator(AutoMinorLocator())
     axs[i].tick_params(axis="x", which='both', direction="in", pad=-15, labelbottom=False)
     axs[i].set_xlim([epochpmom[0], epochpmom[-1]])
@@ -245,7 +248,7 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
     axs[i].plot(epochmag, Bt, 'r-', label='Bt', zorder=1)
     axs[i].plot(epochmag, Bn, 'b-', label='Bn', zorder=2)
     axs[i].plot(epochmag, np.sqrt(Br ** 2 + Bt ** 2 + Bn ** 2), 'm-', label='|B|', zorder=3)
-    axs[i].set_ylabel('B\n(nT)', fontsize=ftsize)
+    axs[i].set_ylabel('B\n(nT)', fontsize=axis_label_fs, labelpad=axis_label_pad)
     axs[i].legend(loc=2, bbox_to_anchor=(1.01, 1.0), borderaxespad=0., fontsize=18)
     # axs[i].plot([dt_tmp, dt_tmp], [-400, 400], 'r--')
     axs[i].xaxis.set_minor_locator(AutoMinorLocator())
@@ -260,7 +263,7 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
     axs[i].plot(epochpmom, vp_r, 'k-')
     # ax5.plot([dt_tmp, dt_tmp], [-3., 3.], 'r--')
     axs[i].xaxis.set_minor_locator(AutoMinorLocator())
-    axs[i].set_ylabel(r'$V_r (km/s)$', fontsize=ftsize)
+    axs[i].set_ylabel(r'$V_r (km/s)$', fontsize=axis_label_fs, labelpad=axis_label_pad)
     # ax5.set_xlabel('Time', fontsize=8)
     axs[i].tick_params(axis="x", which='both', direction="in", pad=-15, labelbottom=False)
     axs[i].set_xlim([epochpmom[0], epochpmom[-1]])
@@ -273,11 +276,11 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
 
     ax2 = axs[i].twinx()
     ax2.plot(epochpmom, Tp, 'r-', linewidth=1)
-    ax2.set_ylabel('$T_p$ \n $(eV)$', color='r', fontsize=ftsize)
+    ax2.set_ylabel('$T_p$ \n $(eV)$', color='r', fontsize=axis_label_fs, labelpad=axis_label_pad)
     axs[i].set_xlim([epochpmom[0], epochpmom[-1]])
     ax2.tick_params(labelsize=20)
     axs[i].plot(epochpmom, densp, 'k-', linewidth=1)
-    axs[i].set_ylabel('$N_p$ \n$(cm^{-3})$', fontsize=ftsize)
+    axs[i].set_ylabel('$N_p$ \n$(cm^{-3})$', fontsize=axis_label_fs, labelpad=axis_label_pad)
     axs[i].xaxis.set_minor_locator(AutoMinorLocator())
     axs[i].tick_params(axis="x", which='both', direction="in", pad=-15, labelbottom=False)
     plt.text(x_label, 0.7, '(e)', transform=plt.gca().transAxes,
@@ -290,8 +293,10 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
     # axs[i].plot([dt_tmp, dt_tmp], [-3., 3.], 'r--')
     axs[i].xaxis.set_minor_locator(AutoMinorLocator())
 
-    axs[i].set_ylabel(r'$\lg\beta$', fontsize=ftsize)
-    axs[i].set_xlabel('Time (UTC)', fontsize=25)
+    axs[i].set_ylabel(r'$\lg\beta$', fontsize=axis_label_fs, labelpad=axis_label_pad)
+    axs[i].set_xlabel('Time (UTC)', fontsize=axis_label_fs, labelpad=axis_label_pad)
+    # Enlarge the date offset text (e.g., 2021-Aug-10) shown by the ConciseDateFormatter
+    axs[i].xaxis.get_offset_text().set_fontsize(18)
     axs[i].set_xlim([epochpmom[0], epochpmom[-1]])
     plt.text(x_label, 0.7, '(f)', transform=plt.gca().transAxes,
              fontdict=dict(fontsize=20, color='k', weight='semibold'))
@@ -307,8 +312,10 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
     B_vec = pytplot.get(B_vars[0])
     axs[i].tick_params(labelsize=20)
     print(ttime)
+    
     B_ave_rtn = B_vec.y.mean(axis=0)
     B_ave_abs = np.linalg.norm(B_ave_rtn)
+    print("磁场矢量：",B_ave_rtn)
     print(B_ave_rtn)
     B_para_rtn = B_ave_rtn / B_ave_abs
     print(B_para_rtn)
@@ -368,8 +375,8 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
         axs[i_].contourf(grid_vx[:, grid_vdf_max_ind[1], :], grid_vz[:, grid_vdf_max_ind[1], :],
                          np.log10(grid_vdf[:, grid_vdf_max_ind[1], :]), levels,
                          cmap='jet')
-        axs[i_].set_xlabel('$V_\\parallel$ (km/s)', fontsize=ftsize)
-        axs[i_].set_ylabel('$V_{\\perp2}$ (km/s)', fontsize=ftsize)
+        axs[i_].set_xlabel('$V_\\parallel$ (km/s)', fontsize=axis_label_fs, labelpad=axis_label_pad)
+        axs[i_].set_ylabel('$V_{\\perp2}$ (km/s)', fontsize=axis_label_fs, labelpad=axis_label_pad)
         axs[i_].set_aspect('equal', adjustable='box')
         axs[i_].set_xlim((-400, 400))
         axs[i_].set_ylim((-400, 400))
@@ -425,16 +432,22 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
                        levels, colors='k',
                        linewidths=.5, linestyles='solid', negative_linestyles='solid')
 
+        # axs[i_].arrow(vdf_max_vrtn[0] + psp_vel[0],  # - 110 * rotmat_mfa_rtn[0, 0],
+        #              vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
+        #              110 * rotmat_mfa_rtn[0, 0],
+        #              110 * rotmat_mfa_rtn[0, 2],
+        #              width=10., head_width=30., color='c')
         axs[i_].arrow(vdf_max_vrtn[0] + psp_vel[0],  # - 110 * rotmat_mfa_rtn[0, 0],
-                     vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
-                     110 * rotmat_mfa_rtn[0, 0],
-                     110 * rotmat_mfa_rtn[0, 2],
-                     width=10., head_width=30., color='c')
+                    vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
+                    0.25*Br_epochp[tind_pmom],
+                    0.25*Bn_epochp[tind_pmom],
+                    width=10., head_width=30., color='c')
         axs[i_].text(vdf_max_vrtn[0] + psp_vel[0],
                     vdf_max_vrtn[2] + psp_vel[2] + 50,
                     r'$\vec{B}$', color='c')
-        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=ftsize)
-        axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=ftsize)
+        print(f"磁场：{rotmat_mfa_rtn[0, 0]},{rotmat_mfa_rtn[0, 2]}")
+        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=axis_label_fs, labelpad=axis_label_pad)
+        axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=axis_label_fs, labelpad=axis_label_pad)
 
         axs[i_].set_aspect('equal', adjustable='box')
         axs[i_].set_xlim((0, 900))
@@ -450,6 +463,7 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
 
         axs.append(fig.add_subplot(spec2[:, 1]))
         time_2 = np.datetime64('2021-08-10T00:29:58')
+        tind_pmom, ttime_pmom = find_nearest(pmom_time, time_2)
         tind, ttime = find_nearest(vdf_time, time_2)
         axs[0].text(ttime, y_epoch_mark, r'$t_2$', fontsize=30)
         axs[5].axvline(x=ttime, ymax=6, c="blue", linewidth=2, zorder=0, clip_on=False, linestyle='--')
@@ -517,14 +531,15 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
                        levels, colors='k',
                        linewidths=.5, linestyles='solid', negative_linestyles='solid')
         axs[i_].arrow(vdf_max_vrtn[0] + psp_vel[0],  # - 110 * rotmat_mfa_rtn[0, 0],
-                     vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
-                     110 * rotmat_mfa_rtn[0, 0],
-                     110 * rotmat_mfa_rtn[0, 2],
-                     width=10., head_width=30., color='c')
-        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=ftsize)
-        axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=ftsize)
+                    vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
+                    0.25*Br_epochp[tind_pmom],
+                    0.25*Bn_epochp[tind_pmom],
+                    width=10., head_width=30., color='c')
+        print(f"磁场：{rotmat_mfa_rtn[0, 0]},{rotmat_mfa_rtn[0, 2]}")
+        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=axis_label_fs, labelpad=axis_label_pad)
+        # axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=ftsize)
         axs[i_].tick_params(labelsize=ftsize)
-
+        axs[i_].set_yticks([])
         axs[i_].set_aspect('equal', adjustable='box')
         axs[i_].set_xlim((0, 900))
         axs[i_].set_ylim((-450, 450))
@@ -537,6 +552,7 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
         '''
         axs.append(fig.add_subplot(spec2[:, 2]))
         time_3 = np.datetime64('2021-08-10T01:15:58')
+        tind_pmom, ttime_pmom = find_nearest(pmom_time, time_3)
         tind, ttime = find_nearest(vdf_time, time_3)
         axs[5].axvline(x=ttime, ymax=6, c="blue", linewidth=2, zorder=0, clip_on=False, linestyle='--')
         axs[0].text(ttime, y_epoch_mark, r'$t_3$', fontsize=30)
@@ -604,14 +620,16 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
                        levels, colors='k',
                        linewidths=.5, linestyles='solid', negative_linestyles='solid')
         axs[i_].arrow(vdf_max_vrtn[0] + psp_vel[0],  # - 110 * rotmat_mfa_rtn[0, 0],
-                     vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
-                     110 * rotmat_mfa_rtn[0, 0],
-                     110 * rotmat_mfa_rtn[0, 2],
-                     width=10., head_width=30., color='c')
-        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=ftsize)
-        axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=ftsize)
+                    vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
+                    0.25*Br_epochp[tind_pmom],
+                    0.25*Bn_epochp[tind_pmom],
+                    width=10., head_width=30., color='c')
+        print(f"磁场：{rotmat_mfa_rtn[0, 0]},{rotmat_mfa_rtn[0, 2]}")
+        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=axis_label_fs, labelpad=axis_label_pad)
+        #axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=ftsize)
 
         axs[i_].set_aspect('equal', adjustable='box')
+        axs[i_].set_yticks([])
         axs[i_].set_xlim((0, 900))
         axs[i_].set_ylim((-450, 450))
         axs[i_].set_title('VDF-$t_3$(Inside HCS)', color='b', fontsize=25)
@@ -620,7 +638,7 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
 
         axs.append(fig.add_subplot(spec2[:, 3]))
         time_2 = np.datetime64('2021-08-10T02:10:58')
-        
+        tind_pmom, ttime_pmom = find_nearest(pmom_time, time_2)
         tind, ttime = find_nearest(vdf_time, time_2)
         axs[5].axvline(x=ttime, ymax=6, c="blue", linewidth=2, zorder=0, clip_on=False, linestyle='--')
         axs[0].text(ttime, y_epoch_mark, r'$t_4$', fontsize=30)
@@ -689,12 +707,13 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
                        linewidths=.5, linestyles='solid', negative_linestyles='solid')
         axs[i_].arrow(vdf_max_vrtn[0] + psp_vel[0],  # - 110 * rotmat_mfa_rtn[0, 0],
                      vdf_max_vrtn[2] + psp_vel[2],  # - 110 * rotmat_mfa_rtn[0, 2],
-                     110 * rotmat_mfa_rtn[0, 0],
-                     110 * rotmat_mfa_rtn[0, 2],
+                     0.25*Br_epochp[tind_pmom],
+                     0.25*Bn_epochp[tind_pmom],
                      width=10., head_width=30., color='c')
         print(f"磁场：{rotmat_mfa_rtn[0, 0]},{rotmat_mfa_rtn[0, 2]}")
-        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=ftsize)
-        axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=ftsize)
+        axs[i_].set_xlabel('$V_R$ (km/s)', fontsize=axis_label_fs, labelpad=axis_label_pad)
+        axs[i_].set_yticks([])
+        #axs[i_].set_ylabel('$V_N$ (km/s)', fontsize=ftsize)
         # plt.colorbar(pos)
         axs[i_].set_aspect('equal', adjustable='box')
         axs[i_].set_xlim((0, 900))
@@ -704,9 +723,12 @@ def plot_vdf_frame(vdftime, i_, frame='rtn', pos=[0, 0], color='r', ):
         axs[i_].text(20,365,'(j)', fontsize=20,weight='semibold')
 
         cax = fig.add_subplot(spec2[:, 4])
-        cbar=fig.colorbar(pos, cax=cax) 
+        cbar=fig.colorbar(pos, cax=cax, shrink=0.6, aspect=15) 
         cbar.set_label(label='$\log_{10}$(VDF)',fontsize=25)
         cbar.ax.tick_params(labelsize=15)
+        cbar_pos = cax.get_position()
+        new_pos = [cbar_pos.x0+0.02, cbar_pos.y0 + 0.08, cbar_pos.width, cbar_pos.height * 0.6]
+        cbar.ax.set_position(new_pos)
         # plt.suptitle(fr"$v_r$={vp_r[tind_pmom]:.2f}km/s,$\Delta v={(vp_r[tind_pmom]-vp_r[-1])/va0:.2f}v_A$,|B|={Babs_epochp[tind_pmom]:.2f}nT, $\sqrt{{|Bt|^2+|Bn|^2}}$={np.sqrt(Babs_epochp[tind_pmom]**2-Br_epochp[tind_pmom]**2):.2f}nT,Br={Br_epochp[tind_pmom]:.2f}nT")
 
 # %%
